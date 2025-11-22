@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using UnityEngine;
 using Verse;
 
@@ -20,7 +20,11 @@ namespace BunkBeds
 
         public override string SettingsCategory()
         {
-            return Content.Name;
+            if (ModsConfig.IsActive("Darknote.BunkBeds"))
+            {
+                return Content.Name;
+            }
+            return "";
         }
     }
 

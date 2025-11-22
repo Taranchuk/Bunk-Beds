@@ -1,43 +1,78 @@
-﻿using RimWorld;
+using RimWorld;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace BunkBeds
 {
+    public enum Axis
+    {
+        X,
+        Y,
+        Z
+    }
+
+    public class RotationalOffsets
+    {
+        public List<Vector3> North = new List<Vector3>();
+        public List<Vector3> South = new List<Vector3>();
+        public List<Vector3> East = new List<Vector3>();
+        public List<Vector3> West = new List<Vector3>();
+    }
+
     [HotSwappable]
     public class CompProperties_BunkBed : CompProperties
     {
         public List<GraphicData> bedTopGraphicDatas;
-
         public int pawnCount;
-        public override void DrawGhost(IntVec3 center, Rot4 rot, ThingDef thingDef, Color ghostCol, AltitudeLayer drawAltitude, Thing thing = null)
-        {
-            for (var i = 1; i < pawnCount; i++)
-            {
-                var drawPos = CompBunkBed.GetDrawOffsetForBunkBeds(rot, i, center.ToVector3ShiftedWithAltitude(drawAltitude));
-                if (rot == Rot4.East)
-                {
-                    drawPos.x += 0.5f;
-                }
-                else if (rot == Rot4.West)
-                {
-                    drawPos.x -= 0.5f;
-                }
-                else if (rot == Rot4.North)
-                {
-                    drawPos.z += 0.5f;
-                }
-                else if (rot == Rot4.South)
-                {
-                    drawPos.z -= 0.5f;
-                }
-                GhostUtility.GhostGraphicFor(bedTopGraphicDatas[i - 1].Graphic, thingDef, ghostCol).DrawFromDef(drawPos, rot, thingDef);
-            }
-        }
+        public RotationalOffsets topGraphicOffsets;
+        public RotationalOffsets pawnOffsets;
+        public RotationalOffsets labelOffsets;
+        public bool preventSharingThought;
+
         public CompProperties_BunkBed()
         {
             this.compClass = typeof(CompBunkBed);
+            topGraphicOffsets = new RotationalOffsets();
+            pawnOffsets = new RotationalOffsets();
+            labelOffsets = new RotationalOffsets();
+        }
+        
+        public override void PostLoadSpecial(ThingDef parentDef)
+        {
+            base.PostLoadSpecial(parentDef);
+            InitializeOffsetLists();
+        }
+        
+        private void InitializeOffsetLists()
+        {
+            InitializeRotationalOffsets(pawnOffsets, pawnCount);
+            int topGraphicsNeeded = System.Math.Max(0, pawnCount - 1);
+            InitializeRotationalOffsets(topGraphicOffsets, topGraphicsNeeded);
+            InitializeRotationalOffsets(labelOffsets, pawnCount);
+        }
+        
+        private void InitializeRotationalOffsets(RotationalOffsets offsets, int count)
+        {
+            if (offsets.North == null || offsets.North.Count == 0)
+                offsets.North = InitializeListWithZeroOffsets(count);
+            if (offsets.South == null || offsets.South.Count == 0)
+                offsets.South = InitializeListWithZeroOffsets(count);
+            if (offsets.East == null || offsets.East.Count == 0)
+                offsets.East = InitializeListWithZeroOffsets(count);
+            if (offsets.West == null || offsets.West.Count == 0)
+                offsets.West = InitializeListWithZeroOffsets(count);
+        }
+        
+        private List<Vector3> InitializeListWithZeroOffsets(int count)
+        {
+            var list = new List<Vector3>();
+            for (int i = 0; i < count; i++)
+            {
+                list.Add(Vector3.zero);
+            }
+            return list;
         }
     }
 
@@ -47,8 +82,8 @@ namespace BunkBeds
         public static HashSet<ThingWithComps> bunkBeds = new HashSet<ThingWithComps>();
         public CompProperties_BunkBed Props => props as CompProperties_BunkBed;
         public int BunkBedLevel => Props.pawnCount - 1;
-
         public List<Graphic> topGraphics;
+
         public override void PostSpawnSetup(bool respawningAfterLoad)
         {
             base.PostSpawnSetup(respawningAfterLoad);
@@ -66,7 +101,7 @@ namespace BunkBeds
             {
                 for (var i = 0; i < topGraphics.Count; i++)
                 {
-                    if (topGraphics[i].color != this.parent.DrawColor 
+                    if (topGraphics[i].color != this.parent.DrawColor
                         || topGraphics[i].colorTwo != this.parent.DrawColorTwo)
                     {
                         needsRebuild = true;
@@ -74,7 +109,6 @@ namespace BunkBeds
                     }
                 }
             }
-
             if (needsRebuild)
             {
                 topGraphics = new List<Graphic>();
@@ -83,48 +117,29 @@ namespace BunkBeds
                     topGraphics.Add(graphicData.GraphicColoredFor(this.parent));
                 }
             }
-
             for (var i = 1; i < BunkBedLevel + 1; i++)
             {
-                var drawPos = GetDrawOffsetForBunkBeds(this.parent.Rotation, i, this.parent.DrawPos);
+                var drawPos = GetDrawOffsetForBunkBeds(this.parent.Rotation, i, this.parent.DrawPos, Props);
                 topGraphics[i - 1].Draw(drawPos, parent.Rotation, parent);
             }
         }
 
-        public static Vector3 GetDrawOffsetForBunkBeds(Rot4 rotation, int bunkLevel, Vector3 drawPos)
+        public Vector3 GetDrawOffsetForBunkBeds(Rot4 rotation, int bunkLevel, Vector3 drawPos, CompProperties_BunkBed props)
         {
             drawPos.y += 1 + bunkLevel;
-            if (rotation == Rot4.South || rotation == Rot4.North)
+            drawPos.y += 0.001f * Mathf.Max(1, parent.Map.Size.z - parent.Position.z);
+            List<Vector3> offsets = null;
+            switch (rotation.AsInt)
             {
-                switch (bunkLevel)
-                {
-                    case 1:
-                        {
-                            drawPos += new Vector3(0, 0, 0.0f);
-                            break;
-                        }
-                    case 2:
-                        {
-                            drawPos += new Vector3(0, 0, 0.75f);
-                            break;
-                        }
-                }
+                case 0: offsets = props.topGraphicOffsets.North; break;
+                case 1: offsets = props.topGraphicOffsets.East; break;
+                case 2: offsets = props.topGraphicOffsets.South; break;
+                case 3: offsets = props.topGraphicOffsets.West; break;
             }
-            else
+
+            if (bunkLevel > 0 && offsets.Count >= bunkLevel)
             {
-                switch (bunkLevel)
-                {
-                    case 1:
-                        {
-                            drawPos += new Vector3(0, 0, 0.25f);
-                            break;
-                        }
-                    case 2:
-                        {
-                            drawPos += new Vector3(0, 0, 1);
-                            break;
-                        }
-                }
+                drawPos += offsets[bunkLevel - 1];
             }
             return drawPos;
         }
@@ -132,55 +147,55 @@ namespace BunkBeds
         public Vector3 GetDrawOffsetForPawns(int bunkLevel, Vector3 drawPos)
         {
             drawPos.y += 0.5f + bunkLevel;
-            if (parent.Rotation == Rot4.South)
+            List<Vector3> offsets = null;
+            switch (parent.Rotation.AsInt)
             {
-                switch (bunkLevel)
-                {
-                    case 1:
-                        {
-                            drawPos += new Vector3(0, 0, 0.0f);
-                            break;
-                        }
-                    case 2:
-                        {
-                            drawPos += new Vector3(0, 0, 0.9f);
-                            break;
-                        }
-                }
+                case 0: offsets = Props.pawnOffsets.North; break;
+                case 1: offsets = Props.pawnOffsets.East; break;
+                case 2: offsets = Props.pawnOffsets.South; break;
+                case 3: offsets = Props.pawnOffsets.West; break;
             }
-            else if (parent.Rotation == Rot4.North)
+
+            if (offsets.Count > bunkLevel)
             {
-                switch (bunkLevel)
-                {
-                    case 1:
-                        {
-                            drawPos += new Vector3(0, 0, 0.5f);
-                            break;
-                        }
-                    case 2:
-                        {
-                            drawPos += new Vector3(0, 0, 1.25f);
-                            break;
-                        }
-                }
-            }
-            else
-            {
-                switch (bunkLevel)
-                {
-                    case 1:
-                        {
-                            drawPos += new Vector3(0, 0, 0.68f);
-                            break;
-                        }
-                    case 2:
-                        {
-                            drawPos += new Vector3(0, 0, 1.4f);
-                            break;
-                        }
-                }
+                drawPos += offsets[bunkLevel];
             }
             return drawPos;
+        }
+
+        public Vector3 GetDrawOffsetForLabels(int bunkLevel, Vector3 drawPos)
+        {
+            List<Vector3> offsets = null;
+            switch (parent.Rotation.AsInt)
+            {
+                case 0: offsets = Props.labelOffsets.North; break;
+                case 1: offsets = Props.labelOffsets.East; break;
+                case 2: offsets = Props.labelOffsets.South; break;
+                case 3: offsets = Props.labelOffsets.West; break;
+            }
+
+            if (offsets.Count > bunkLevel)
+            {
+                drawPos += offsets[bunkLevel];
+            }
+            return drawPos;
+        }
+
+        public override IEnumerable<Gizmo> CompGetGizmosExtra()
+        {
+            if (DebugSettings.ShowDevGizmos)
+            {
+                yield return new Command_Action
+                {
+                    defaultLabel = "Adjust Bunk Bed Offsets",
+                    defaultDesc = "Adjust all bunk bed offsets",
+                    icon = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/OpenInspector", false) ?? BaseContent.BadTex,
+                    action = delegate
+                    {
+                        Find.WindowStack.Add(new Dialog_BunkBedOffsets(this));
+                    }
+                };
+            }
         }
 
         public override void DrawGUIOverlay()
@@ -213,59 +228,11 @@ namespace BunkBeds
                 GenMapUI.DrawThingLabel(GetMultiOwnersLabelScreenPosFor(i), pawn2.LabelShort, defaultThingLabelColor);
             }
         }
-
         private Vector3 GetMultiOwnersLabelScreenPosFor(int slotIndex)
         {
             Vector3 drawPos = this.parent.DrawPos;
             var result = this.GetDrawOffsetForLabels(slotIndex, drawPos).MapToUIPosition();
             return result;
-        }
-
-        public Vector3 GetDrawOffsetForLabels(int bunkLevel, Vector3 drawPos)
-        {
-            if (parent.Rotation.IsHorizontal is false)
-            {
-                switch (bunkLevel)
-                {
-                    case 0:
-                        {
-                            drawPos += new Vector3(0, 0, -0.7f);
-                            break;
-                        }
-                    case 1:
-                        {
-                            drawPos += new Vector3(0, 0, -0.1f);
-                            break;
-                        }
-                    case 2:
-                        {
-                            drawPos += new Vector3(0, 0, 0.55f);
-                            break;
-                        }
-                }
-            }
-            else
-            {
-                switch (bunkLevel)
-                {
-                    case 0:
-                        {
-                            drawPos += new Vector3(0, 0, -0.2f);
-                            break;
-                        }
-                    case 1:
-                        {
-                            drawPos += new Vector3(0, 0, 0.5f);
-                            break;
-                        }
-                    case 2:
-                        {
-                            drawPos += new Vector3(0, 0, 1.2f);
-                            break;
-                        }
-                }
-            }
-            return drawPos;
         }
     }
 }

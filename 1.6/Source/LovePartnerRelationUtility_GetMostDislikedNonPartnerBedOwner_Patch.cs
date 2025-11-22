@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using Verse;
 
@@ -11,10 +11,11 @@ namespace BunkBeds
         {
             if (BunkBedsSettings.occupantsWillHaveShareBedDebuff is false)
             {
-                if (p.ownership.OwnedBed.IsBunkBed())
-                {
-                    return false;
-                }
+                return false;
+            }
+            if (p.ownership.OwnedBed.IsBunkBed(out var comp) && comp.Props.preventSharingThought)
+            {
+                return false;
             }
             return true;
         }
