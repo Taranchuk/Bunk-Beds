@@ -98,6 +98,22 @@ namespace BunkBeds
                 currentY += 40f;
             }
 
+            currentY += 40f;
+            Widgets.Label(new Rect(0, currentY, viewRect.width, 25f), "Graphic Sizes");
+            currentY += 30f;
+
+            currentY = DrawGraphicSizeSlidersForRotation(viewRect, currentY, Rot4.North, sliderHeight, "North");
+            currentY = DrawGraphicSizeSlidersForRotation(viewRect, currentY, Rot4.South, sliderHeight, "South");
+            currentY = DrawGraphicSizeSlidersForRotation(viewRect, currentY, Rot4.East, sliderHeight, "East");
+            currentY = DrawGraphicSizeSlidersForRotation(viewRect, currentY, Rot4.West, sliderHeight, "West");
+
+            Rect resetGraphicSizeButtonRect = new Rect(viewRect.width - 210f, currentY, 100f, 30f);
+            if (Widgets.ButtonText(resetGraphicSizeButtonRect, "Reset"))
+            {
+                ResetGraphicSizes();
+            }
+            currentY += 40f;
+
             scrollViewHeight = currentY + 50f;
 
             Widgets.EndScrollView();
@@ -340,6 +356,68 @@ namespace BunkBeds
             }
         }
 
+        private float DrawGraphicSizeSlidersForRotation(Rect viewRect, float currentY, Rot4 rotation, float sliderHeight, string rotationName)
+        {
+            Widgets.Label(new Rect(0, currentY, viewRect.width, 25f), $"{rotationName} Rotation");
+            currentY += 25f;
+
+            Vector2? size = null;
+            switch (rotation.AsInt)
+            {
+                case 0: size = bunkBed.Props.graphicSizes.North; break;
+                case 1: size = bunkBed.Props.graphicSizes.East; break;
+                case 2: size = bunkBed.Props.graphicSizes.South; break;
+                case 3: size = bunkBed.Props.graphicSizes.West; break;
+            }
+
+            bool hasValue = size.HasValue;
+            Widgets.CheckboxLabeled(new Rect(0, currentY, 150f, 24f), "Override Size", ref hasValue);
+            currentY += 30f;
+
+            if (hasValue)
+            {
+                Vector2 currentSize = size ?? bunkBed.parent.def.graphicData.drawSize;
+                
+                float sliderWidth = (viewRect.width) / 2f - 10f;
+                
+                Rect xLabelRect = new Rect(0, currentY, 20, sliderHeight);
+                Widgets.Label(xLabelRect, "X");
+                Rect xSliderRect = new Rect(25, currentY, sliderWidth - 25, sliderHeight);
+                currentSize.x = Widgets.HorizontalSlider(xSliderRect, currentSize.x, 0.1f, 3f, middleAlignment: false, label: currentSize.x.ToString("F2"));
+
+                float yOffset = viewRect.width / 2f;
+                Rect yLabelRect = new Rect(yOffset, currentY, 20, sliderHeight);
+                Widgets.Label(yLabelRect, "Y");
+                Rect ySliderRect = new Rect(yOffset + 25, currentY, sliderWidth - 25, sliderHeight);
+                currentSize.y = Widgets.HorizontalSlider(ySliderRect, currentSize.y, 0.1f, 3f, middleAlignment: false, label: currentSize.y.ToString("F2"));
+
+                size = currentSize;
+                currentY += sliderHeight;
+            }
+            else
+            {
+                size = null;
+            }
+
+            switch (rotation.AsInt)
+            {
+                case 0: bunkBed.Props.graphicSizes.North = size; break;
+                case 1: bunkBed.Props.graphicSizes.East = size; break;
+                case 2: bunkBed.Props.graphicSizes.South = size; break;
+                case 3: bunkBed.Props.graphicSizes.West = size; break;
+            }
+
+            return currentY;
+        }
+
+        private void ResetGraphicSizes()
+        {
+            bunkBed.Props.graphicSizes.North = null;
+            bunkBed.Props.graphicSizes.South = null;
+            bunkBed.Props.graphicSizes.East = null;
+            bunkBed.Props.graphicSizes.West = null;
+        }
+
         public static string GenerateXmlString(CompBunkBed bunkBed)
         {
             StringBuilder sb = new StringBuilder();
@@ -424,6 +502,32 @@ namespace BunkBeds
             sb.AppendLine("                    </West>");
 
             sb.AppendLine("                </labelOffsets>");
+            
+            // Add graphicSizes to XML output if any values are set
+            if (bunkBed.Props.graphicSizes.North.HasValue ||
+                bunkBed.Props.graphicSizes.South.HasValue ||
+                bunkBed.Props.graphicSizes.East.HasValue ||
+                bunkBed.Props.graphicSizes.West.HasValue)
+            {
+                sb.AppendLine("                <graphicSizes>");
+                if (bunkBed.Props.graphicSizes.North.HasValue)
+                {
+                    sb.AppendLine($"                    <North>({bunkBed.Props.graphicSizes.North.Value.x:F3},{bunkBed.Props.graphicSizes.North.Value.y:F3})</North>");
+                }
+                if (bunkBed.Props.graphicSizes.South.HasValue)
+                {
+                    sb.AppendLine($"                    <South>({bunkBed.Props.graphicSizes.South.Value.x:F3},{bunkBed.Props.graphicSizes.South.Value.y:F3})</South>");
+                }
+                if (bunkBed.Props.graphicSizes.East.HasValue)
+                {
+                    sb.AppendLine($"                    <East>({bunkBed.Props.graphicSizes.East.Value.x:F3},{bunkBed.Props.graphicSizes.East.Value.y:F3})</East>");
+                }
+                if (bunkBed.Props.graphicSizes.West.HasValue)
+                {
+                    sb.AppendLine($"                    <West>({bunkBed.Props.graphicSizes.West.Value.x:F3},{bunkBed.Props.graphicSizes.West.Value.y:F3})</West>");
+                }
+                sb.AppendLine("                </graphicSizes>");
+            }
 
             return sb.ToString();
         }

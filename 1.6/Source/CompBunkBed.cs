@@ -21,6 +21,14 @@ namespace BunkBeds
         public List<Vector3> West = new List<Vector3>();
     }
 
+    public class RotationalGraphicSizes
+    {
+        public Vector2? North = null;
+        public Vector2? South = null;
+        public Vector2? East = null;
+        public Vector2? West = null;
+    }
+
     [HotSwappable]
     public class CompProperties_BunkBed : CompProperties
     {
@@ -29,6 +37,7 @@ namespace BunkBeds
         public RotationalOffsets topGraphicOffsets;
         public RotationalOffsets pawnOffsets;
         public RotationalOffsets labelOffsets;
+        public RotationalGraphicSizes graphicSizes;
         public bool preventSharingThought;
 
         public CompProperties_BunkBed()
@@ -37,6 +46,7 @@ namespace BunkBeds
             topGraphicOffsets = new RotationalOffsets();
             pawnOffsets = new RotationalOffsets();
             labelOffsets = new RotationalOffsets();
+            graphicSizes = new RotationalGraphicSizes();
         }
         
         public override void PostLoadSpecial(ThingDef parentDef)
@@ -83,16 +93,23 @@ namespace BunkBeds
         public CompProperties_BunkBed Props => props as CompProperties_BunkBed;
         public int BunkBedLevel => Props.pawnCount - 1;
         public List<Graphic> topGraphics;
+        private Graphic originalGraphic;
 
         public override void PostSpawnSetup(bool respawningAfterLoad)
         {
             base.PostSpawnSetup(respawningAfterLoad);
             bunkBeds.Add(this.parent);
         }
+        
         public override void PostDraw()
         {
             base.PostDraw();
+            
+            // Update parent graphic if needed
+            UpdateParentGraphic();
+            
             bool needsRebuild = false;
+            needsRebuild = true;
             if (topGraphics is null)
             {
                 needsRebuild = true;
@@ -114,13 +131,70 @@ namespace BunkBeds
                 topGraphics = new List<Graphic>();
                 foreach (var graphicData in Props.bedTopGraphicDatas)
                 {
-                    topGraphics.Add(graphicData.GraphicColoredFor(this.parent));
+                    // Apply graphic size override if specified for the current rotation
+                    var modifiedGraphicData = graphicData;
+                    if (Props.graphicSizes != null)
+                    {
+                        Vector2? sizeOverride = null;
+                        switch (parent.Rotation.AsInt)
+                        {
+                            case 0: sizeOverride = Props.graphicSizes.North; break;
+                            case 2: sizeOverride = Props.graphicSizes.South; break;
+                            case 1: sizeOverride = Props.graphicSizes.East; break;
+                            case 3: sizeOverride = Props.graphicSizes.West; break;
+                        }
+                        
+                        if (sizeOverride.HasValue)
+                        {
+                            modifiedGraphicData = new GraphicData();
+                            modifiedGraphicData.CopyFrom(graphicData);
+                            modifiedGraphicData.drawSize = sizeOverride.Value;
+                        }
+                    }
+                    
+                    topGraphics.Add(modifiedGraphicData.GraphicColoredFor(this.parent));
                 }
             }
             for (var i = 1; i < BunkBedLevel + 1; i++)
             {
                 var drawPos = GetDrawOffsetForBunkBeds(this.parent.Rotation, i, this.parent.DrawPos, Props);
                 topGraphics[i - 1].Draw(drawPos, parent.Rotation, parent);
+            }
+        }
+        
+        private void UpdateParentGraphic()
+        {
+            if (Props.graphicSizes != null)
+            {
+                Vector2? sizeOverride = null;
+                switch (parent.Rotation.AsInt)
+                {
+                    case 0: sizeOverride = Props.graphicSizes.North; break;
+                    case 2: sizeOverride = Props.graphicSizes.South; break;
+                    case 1: sizeOverride = Props.graphicSizes.East; break;
+                    case 3: sizeOverride = Props.graphicSizes.West; break;
+                }
+
+                if (originalGraphic == null)
+                {
+                    originalGraphic = parent.graphicInt;
+                }
+
+                if (sizeOverride.HasValue)
+                {
+                    // Create a modified graphic with the new size
+                    var modifiedGraphicData = new GraphicData();
+                    modifiedGraphicData.CopyFrom(parent.def.graphicData);
+                    modifiedGraphicData.drawSize = sizeOverride.Value;
+                    var modifiedGraphic = modifiedGraphicData.GraphicColoredFor(parent);
+                    
+                    // Access the parent's graphicInt field directly (assuming publicizer)
+                    parent.graphicInt = modifiedGraphic;
+                }
+                else
+                {
+                    parent.graphicInt = originalGraphic;
+                }
             }
         }
 
