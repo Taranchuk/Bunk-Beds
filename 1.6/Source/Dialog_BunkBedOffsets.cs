@@ -1,4 +1,4 @@
-using RimWorld;
+﻿using RimWorld;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -502,8 +502,6 @@ namespace BunkBeds
             sb.AppendLine("                    </West>");
 
             sb.AppendLine("                </labelOffsets>");
-            
-            // Add graphicSizes to XML output if any values are set
             if (bunkBed.Props.graphicSizes.North.HasValue ||
                 bunkBed.Props.graphicSizes.South.HasValue ||
                 bunkBed.Props.graphicSizes.East.HasValue ||

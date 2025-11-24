@@ -108,8 +108,8 @@
                     </West>
                   </labelOffsets>
                   <graphicSizes>
-                    <North>(2.000,2.400)</North>
-                    <South>(2.000,2.400)</South>
+                    <North>(2.000,2.800)</North>
+                    <South>(2.000,2.800)</South>
                   </graphicSizes>
                 </li>
               </comps>
@@ -223,8 +223,8 @@
                     </West>
                   </labelOffsets>
                   <graphicSizes>
-                    <North>(2.000,2.400)</North>
-                    <South>(2.000,2.400)</South>
+                    <North>(2.000,2.800)</North>
+                    <South>(2.000,2.800)</South>
                   </graphicSizes>
                 </li>
               </comps>

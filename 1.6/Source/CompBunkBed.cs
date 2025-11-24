@@ -104,12 +104,7 @@ namespace BunkBeds
         public override void PostDraw()
         {
             base.PostDraw();
-            
-            // Update parent graphic if needed
-            UpdateParentGraphic();
-            
             bool needsRebuild = false;
-            needsRebuild = true;
             if (topGraphics is null)
             {
                 needsRebuild = true;
@@ -128,10 +123,10 @@ namespace BunkBeds
             }
             if (needsRebuild)
             {
+                UpdateParentGraphic();
                 topGraphics = new List<Graphic>();
                 foreach (var graphicData in Props.bedTopGraphicDatas)
                 {
-                    // Apply graphic size override if specified for the current rotation
                     var modifiedGraphicData = graphicData;
                     if (Props.graphicSizes != null)
                     {
@@ -182,13 +177,10 @@ namespace BunkBeds
 
                 if (sizeOverride.HasValue)
                 {
-                    // Create a modified graphic with the new size
                     var modifiedGraphicData = new GraphicData();
                     modifiedGraphicData.CopyFrom(parent.def.graphicData);
                     modifiedGraphicData.drawSize = sizeOverride.Value;
                     var modifiedGraphic = modifiedGraphicData.GraphicColoredFor(parent);
-                    
-                    // Access the parent's graphicInt field directly (assuming publicizer)
                     parent.graphicInt = modifiedGraphic;
                 }
                 else
