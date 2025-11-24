@@ -1,4 +1,4 @@
-﻿using RimWorld;
+using RimWorld;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -155,7 +155,7 @@ namespace BunkBeds
             float verticalPadding = sliderHeight / 6f;
             float verticalPaddingDouble = sliderHeight / 3f;
             Rect sliderRect = new Rect(sliderX, currentY + verticalPadding, sliderWidthAdjusted, sliderHeight - verticalPaddingDouble);
-            Widgets.HorizontalSlider(sliderRect, ref value, new FloatRange(-2f, 2f), value.ToString("F2"), 0f);
+            Widgets.HorizontalSlider(sliderRect, ref value, new FloatRange(-1f, 1.5f), value.ToString("F2"), 0f);
             Rect resetButtonRect = new Rect(resetButtonX, currentY, 24, sliderHeight);
             if (Widgets.ButtonText(resetButtonRect, "R"))
             {
