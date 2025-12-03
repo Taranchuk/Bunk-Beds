@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using Verse;
 using System.Reflection;
@@ -27,14 +27,11 @@ namespace BunkBeds
 
         public static bool Prefix(Building_Bed bed, Pawn guest, ref int __result)
         {
-            // Check if the bed is a bunk bed
             if (bed.IsBunkBed())
             {
-                __result = 0;  // Set result to 0 or any other default value
-                return false;  // Skip the original method
+                __result = 0;
+                return false;
             }
-
-            // Allow original method to run if not a bunk bed
             return true;
         }
     }
