@@ -17,7 +17,7 @@ namespace BunkBeds
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBunkBed(this ThingWithComps bed)
         {
-            if (bunkBed == bed)
+            if (bunkBed != null && bunkBed == bed)
             {
                 return true;
             }
