@@ -273,21 +273,14 @@ namespace BunkBeds
                 return;
             }
             Color defaultThingLabelColor = GenMapUI.DefaultThingLabelColor;
+
             if (!bed.OwnersForReading.Any() && (Building_Bed_DrawGUIOverlay_Patch.guestBedType is null
                 || Building_Bed_DrawGUIOverlay_Patch.guestBedType.IsAssignableFrom(this.parent.def.thingClass) is false))
             {
                 GenMapUI.DrawThingLabel(bed, "Unowned".Translate(), defaultThingLabelColor);
                 return;
             }
-            if (bed.OwnersForReading.Count == 1)
-            {
-                Pawn pawn = bed.OwnersForReading[0];
-                if ((!pawn.InBed() || pawn.CurrentBed() != bed) && (!pawn.RaceProps.Animal || Prefs.AnimalNameMode.ShouldDisplayAnimalName(pawn)))
-                {
-                    GenMapUI.DrawThingLabel(this.parent, pawn.LabelShort, defaultThingLabelColor);
-                }
-                return;
-            }
+            
             for (int i = 0; i < bed.OwnersForReading.Count; i++)
             {
                 Pawn pawn2 = bed.OwnersForReading[i];
