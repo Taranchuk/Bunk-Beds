@@ -1,10 +1,5 @@
-using HarmonyLib;
-using RimWorld;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 using Verse;
 
 namespace BunkBeds
@@ -13,26 +8,42 @@ namespace BunkBeds
     public static class Utils
     {
         public static ThingWithComps bunkBed;
-        
+        public static CompBunkBed compBunkBed;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBunkBed(this ThingWithComps bed)
         {
-            if (bunkBed != null && bunkBed == bed)
+            if (bed is null) return false;
+            if (bunkBed == bed)
             {
                 return true;
             }
-            if (bed != null && CompBunkBed.bunkBeds.Contains(bed))
+            if (CompBunkBed.bunkBeds.ContainsKey(bed.thingIDNumber))
             {
                 bunkBed = bed;
                 return true;
             }
             return false;
         }
+
+        public static ThingWithComps bunkBed2;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBunkBed(this ThingWithComps bed, out CompBunkBed comp)
         {
-            comp = bed?.GetComp<CompBunkBed>();
-            return comp != null;
+            if (bed != null && bed == bunkBed2)
+            {
+                comp = compBunkBed;
+                return comp != null;
+            }
+            if (bed != null && CompBunkBed.bunkBeds.TryGetValue(bed.thingIDNumber, out comp))
+            {
+                bunkBed2 = bed;
+                compBunkBed = comp;
+                return true;
+            }
+            comp = null;
+            return false;
         }
     }
 

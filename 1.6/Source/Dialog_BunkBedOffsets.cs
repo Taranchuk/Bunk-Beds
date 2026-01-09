@@ -1,5 +1,4 @@
 using RimWorld;
-using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -17,12 +16,12 @@ namespace BunkBeds
         public Dialog_BunkBedOffsets(CompBunkBed bunkBed)
         {
             this.bunkBed = bunkBed;
-            this.doCloseX = true;
-            this.doCloseButton = false;
-            this.closeOnClickedOutside = false;
-            this.absorbInputAroundWindow = true;
-            this.draggable = true;
-            this.preventCameraMotion = false;
+            doCloseX = true;
+            doCloseButton = false;
+            closeOnClickedOutside = false;
+            absorbInputAroundWindow = true;
+            draggable = true;
+            preventCameraMotion = false;
         }
 
         public override void DoWindowContents(Rect inRect)

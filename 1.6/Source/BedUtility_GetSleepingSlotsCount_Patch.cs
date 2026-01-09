@@ -2,9 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using HarmonyLib;
 using RimWorld;
-using System.Reflection;
 using System.Threading;
-using Verse;
 
 namespace BunkBeds
 {

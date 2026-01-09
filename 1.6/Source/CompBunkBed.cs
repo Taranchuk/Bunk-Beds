@@ -2,7 +2,6 @@ using RimWorld;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
-using Verse.Sound;
 
 namespace BunkBeds
 {
@@ -42,7 +41,7 @@ namespace BunkBeds
 
         public CompProperties_BunkBed()
         {
-            this.compClass = typeof(CompBunkBed);
+            compClass = typeof(CompBunkBed);
             topGraphicOffsets = new RotationalOffsets();
             pawnOffsets = new RotationalOffsets();
             labelOffsets = new RotationalOffsets();
@@ -89,7 +88,7 @@ namespace BunkBeds
     [HotSwappable]
     public class CompBunkBed : ThingComp
     {
-        public static HashSet<ThingWithComps> bunkBeds = new HashSet<ThingWithComps>();
+        public static Dictionary<int, CompBunkBed> bunkBeds = new Dictionary<int, CompBunkBed>();
         public CompProperties_BunkBed Props => props as CompProperties_BunkBed;
         public int BunkBedLevel => Props.pawnCount - 1;
         public List<Graphic> topGraphics;
@@ -98,7 +97,13 @@ namespace BunkBeds
         public override void PostSpawnSetup(bool respawningAfterLoad)
         {
             base.PostSpawnSetup(respawningAfterLoad);
-            bunkBeds.Add(this.parent);
+            bunkBeds[parent.thingIDNumber] = this;
+        }
+
+        public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+        {
+            base.PostDeSpawn(map, mode);
+            bunkBeds.Remove(parent.thingIDNumber);
         }
         
         public override void PostDraw()
@@ -111,10 +116,11 @@ namespace BunkBeds
             }
             else
             {
+                var drawColor = parent.DrawColor;
+                var drawColorTwo = parent.DrawColorTwo;
                 for (var i = 0; i < topGraphics.Count; i++)
                 {
-                    if (topGraphics[i].color != this.parent.DrawColor
-                        || topGraphics[i].colorTwo != this.parent.DrawColorTwo)
+                    if (topGraphics[i].color != drawColor || topGraphics[i].colorTwo != drawColorTwo)
                     {
                         needsRebuild = true;
                         break;
@@ -147,18 +153,22 @@ namespace BunkBeds
                         }
                     }
                     
-                    topGraphics.Add(modifiedGraphicData.GraphicColoredFor(this.parent));
+                    topGraphics.Add(modifiedGraphicData.GraphicColoredFor(parent));
                 }
             }
             for (var i = 1; i < BunkBedLevel + 1; i++)
             {
-                var drawPos = GetDrawOffsetForBunkBeds(this.parent.Rotation, i, this.parent.DrawPos, Props);
+                var drawPos = GetDrawOffsetForBunkBeds(parent.Rotation, i, parent.DrawPos, Props);
                 topGraphics[i - 1].Draw(drawPos, parent.Rotation, parent);
             }
         }
         
         private void UpdateParentGraphic()
         {
+            if (originalGraphic == null)
+            {
+                originalGraphic = parent.graphicInt;
+            }
             if (Props.graphicSizes != null)
             {
                 Vector2? sizeOverride = null;
@@ -169,12 +179,6 @@ namespace BunkBeds
                     case 1: sizeOverride = Props.graphicSizes.East; break;
                     case 3: sizeOverride = Props.graphicSizes.West; break;
                 }
-
-                if (originalGraphic == null)
-                {
-                    originalGraphic = parent.graphicInt;
-                }
-
                 if (sizeOverride.HasValue)
                 {
                     var modifiedGraphicData = new GraphicData();
@@ -185,8 +189,12 @@ namespace BunkBeds
                 }
                 else
                 {
-                    parent.graphicInt = originalGraphic;
+                    parent.graphicInt = originalGraphic.data.GraphicColoredFor(parent);
                 }
+            }
+            else
+            {
+                parent.graphicInt = originalGraphic.data.GraphicColoredFor(parent);
             }
         }
 
@@ -267,7 +275,7 @@ namespace BunkBeds
         public override void DrawGUIOverlay()
         {
             base.DrawGUIOverlay();
-            var bed = this.parent as Building_Bed;
+            var bed = parent as Building_Bed;
             if (bed.Medical || Find.CameraDriver.CurrentZoom != 0 || !bed.PlayerCanSeeOwners)
             {
                 return;
@@ -275,7 +283,7 @@ namespace BunkBeds
             Color defaultThingLabelColor = GenMapUI.DefaultThingLabelColor;
 
             if (!bed.OwnersForReading.Any() && (Building_Bed_DrawGUIOverlay_Patch.guestBedType is null
-                || Building_Bed_DrawGUIOverlay_Patch.guestBedType.IsAssignableFrom(this.parent.def.thingClass) is false))
+                || Building_Bed_DrawGUIOverlay_Patch.guestBedType.IsAssignableFrom(parent.def.thingClass) is false))
             {
                 GenMapUI.DrawThingLabel(bed, "Unowned".Translate(), defaultThingLabelColor);
                 return;
@@ -289,8 +297,8 @@ namespace BunkBeds
         }
         private Vector3 GetMultiOwnersLabelScreenPosFor(int slotIndex)
         {
-            Vector3 drawPos = this.parent.DrawPos;
-            var result = this.GetDrawOffsetForLabels(slotIndex, drawPos).MapToUIPosition();
+            Vector3 drawPos = parent.DrawPos;
+            var result = GetDrawOffsetForLabels(slotIndex, drawPos).MapToUIPosition();
             return result;
         }
     }
