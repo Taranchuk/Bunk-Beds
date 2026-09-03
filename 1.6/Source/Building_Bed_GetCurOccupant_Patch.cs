@@ -53,7 +53,8 @@ namespace BunkBeds
                     }
                 }
             }
-            else
+            // Check if the list is actually filled up to the slot we're trying to check
+            else if (slotIndex < comp.AssignedPawnsForReading.Count)
             {
                 // No pawn is assigned or pawn not in bed posture
                 var sleepingSlotPos = __instance.Position;
